@@ -1,0 +1,169 @@
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#define MAX 100
+
+typedef struct usr{
+    
+    char name[MAX];
+    char email[MAX];
+    
+    char replacedcommand[MAX][MAX];
+    char replacingcommand[MAX][MAX];
+    int replacedcommand_count;
+    
+}usr;
+
+
+typedef struct project{
+    
+    char writername[MAX];
+    char writeremail[MAX];
+    char username[MAX];
+    char useremail[MAX];
+    
+    char replacedcommand[MAX][MAX];
+    char replacingcommand[MAX][MAX];
+    int replacedcommand_count;
+    
+    char path[MAX];
+    
+}project;
+
+
+// other functions' prototype:
+int check_for_neogit(char * path);
+
+int main(int argc, const char * argv[]) {
+   
+    if(argc <= 2 || strcmp(argv[1], "neogit") != 0){
+        printf("Invalid command\n");
+        return 1;
+    }
+    
+    //neogit ...
+    usr me;
+    project curproj;
+    
+    
+    if(strcmp(argv[2], "config") == 0){
+        //havent fixed the problem of checkign if the last arguemnt starts and ends w "
+        if(argc <= 4){
+            printf("Error: Invalid config command.\n");
+            return 1;
+        }
+        if(strcmp(argv[3], "-global") == 0){
+
+            if(argc == 5 ){
+            printf("Error: Invalid global config command.\n");
+            return 1;
+            }
+            
+            if(strcmp(argv[4], "user.name") == 0){
+                strcpy(me.name, argv[5]);
+            }
+            else if(strcmp(argv[4], "user.email") == 0){
+                strcpy(me.email, argv[5]);
+            }
+            else if (strncmp(argv[4], "alias.", 6) == 0){ //alias
+                //to have the cmd name we wana use instead of the actual command
+                char alias[MAX];
+                strcpy(alias, argv[4]);
+                char * token = strtok(alias, ".");
+                token = strtok(NULL, ".");
+                strcpy(me.replacingcommand[me.replacedcommand_count], token);
+                strcpy(me.replacedcommand[me.replacedcommand_count++], argv[5]);
+                
+            }
+            else{
+                printf("Error: Invalid config command.\n");
+                return 1;
+            }
+        }
+        else{
+            
+            if(strcmp(argv[3], "user.name") == 0){
+                strcpy(curproj.username, argv[4]);
+            }
+            else if(strcmp(argv[3], "user.email") == 0){
+                strcpy(curproj.useremail, argv[4]);
+            }
+            else if (strncmp(argv[3], "alias.", 6) == 0){ //alias
+
+
+                //we need to save this in some file in the .neogit file created before:
+                ///
+
+
+
+                ///
+                //to have the cmd name we wanna use instead of the actual command
+                char alias[MAX];
+                strcpy(alias, argv[3]);
+                char * token = strtok(alias, ".");
+                token = strtok(NULL, ".");
+                strcpy(curproj.replacingcommand[curproj.replacedcommand_count], token);
+                strcpy(curproj.replacedcommand[curproj.replacedcommand_count++], argv[4]);
+            }
+            else{
+                printf("Error: Invalid config command.\n");
+                return 1;
+            }
+        }
+    }
+    
+    else if(strcmp(argv[2], "init") == 0){
+        getcwd(curproj.path, MAX); //getting the current path we are in
+        
+        // checking if .neogit exists in the cur dir or upper dirs
+        if(check_for_neogit(curproj.path) != -1){
+            printf("Error: The neogit repository already exists.\n");
+        }
+        else{
+            // if not, making /.neogit directory in the current directory
+            strcat(curproj.path, "/.neogit");
+            mkdir(curproj.path, 0777); //
+        }
+        
+    }
+    
+    else{
+        
+        if(check_for_neogit(curproj.path) == -1){
+            printf("Error: No neogit repository exists\n");
+        }
+        
+        //other commands here:
+        else{
+            printf("Error: No such command exists.\n");
+        }
+        
+    }
+    
+    return 0;
+}
+
+
+int check_for_neogit(char * path){
+    
+    struct stat buf;
+    char checkPath[MAX];
+    strcpy(checkPath, path);
+    strcat(checkPath, "/.neogit");
+    
+    if(!strchr(path, '/')){ //reaching the root directory
+        return stat(checkPath, &buf);
+    }
+    else if(stat(checkPath, &buf) == -1){
+        char * pointer_to_last_slash = strrchr(checkPath, '/');
+        *pointer_to_last_slash = '\0';
+        pointer_to_last_slash = strrchr(checkPath, '/');
+        *pointer_to_last_slash = '\0';
+        return check_for_neogit(checkPath);
+    }
+    else{
+        return 0;
+    }
+}
